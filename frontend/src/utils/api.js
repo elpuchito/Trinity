@@ -1,5 +1,5 @@
 /**
- * TriageForge — API Client
+ * Trinity — API Client
  * Fetch wrapper for backend API communication.
  */
 

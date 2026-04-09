@@ -1,5 +1,5 @@
 """
-TriageForge — Main Application
+Trinity — Main Application
 FastAPI app with OpenTelemetry instrumentation, CORS, and lifecycle management.
 """
 
@@ -81,7 +81,7 @@ def setup_telemetry():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle management."""
-    logger.info("🚀 TriageForge starting up...")
+    logger.info("🚀 Trinity starting up...")
 
     # Initialize OpenTelemetry
     setup_telemetry()
@@ -104,11 +104,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("⚠️  RAG indexing failed (ChromaDB may not be ready): %s", e)
 
-    logger.info("✅ TriageForge is ready!")
+    logger.info("✅ Trinity is ready!")
     yield
 
     # Shutdown
-    logger.info("🛑 TriageForge shutting down...")
+    logger.info("🛑 Trinity shutting down...")
     await close_db()
     logger.info("👋 Goodbye!")
 
@@ -117,7 +117,7 @@ async def lifespan(app: FastAPI):
 # FastAPI App
 # ============================================
 app = FastAPI(
-    title="TriageForge",
+    title="Trinity",
     description="SRE Incident Intake & Triage Agent — Intelligent incident triage with multimodal AI analysis",
     version=settings.app_version,
     lifespan=lifespan,
@@ -179,7 +179,7 @@ async def metrics_endpoint():
 async def root():
     """Root endpoint — API info."""
     return {
-        "name": "TriageForge API",
+        "name": "Trinity API",
         "version": settings.app_version,
         "docs": "/docs",
         "health": "/health",

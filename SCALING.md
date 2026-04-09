@@ -1,6 +1,6 @@
 # SCALING.md — Production Scaling Strategy
 
-TriageForge is designed as a **single-node Docker Compose deployment** for the hackathon. This document outlines the path to production scale.
+Trinity is designed as a **single-node Docker Compose deployment** for the hackathon. This document outlines the path to production scale.
 
 ---
 

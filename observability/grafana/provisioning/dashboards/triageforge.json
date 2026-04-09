@@ -490,7 +490,7 @@
       "options": {
         "search": "triageforge-backend"
       },
-      "title": "Recent Traces — TriageForge Pipeline",
+      "title": "Recent Traces — Trinity Pipeline",
       "type": "traces",
       "targets": [
         {
@@ -534,7 +534,7 @@
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "TriageForge — SRE Triage Pipeline",
+  "title": "Trinity — SRE Triage Pipeline",
   "uid": "triageforge-main",
   "version": 1
 }

@@ -1,5 +1,5 @@
 """
-TriageForge — Router Agent
+Trinity — Router Agent
 Final decision-maker: synthesizes all sub-agent outputs, assigns final
 severity, determines team routing, and plans notifications.
 """

@@ -1,5 +1,5 @@
 /**
- * TriageForge — Icon System
+ * Trinity — Icon System
  * Clean, professional SVG icons. Lucide-inspired line icons.
  * No external dependencies — pure React SVG components.
  */
@@ -393,5 +393,33 @@ export function IconVideo(props) {
       <polygon points="23 7 16 12 23 17 23 7" />
       <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
     </Icon>
+  );
+}
+
+// Trinity Logo — Triquetra Knot
+export function IconTrinity({ size = 18, ...props }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+      {/* Three interlocking arcs forming a triquetra */}
+      <path
+        d="M12 2C12 2 8 6.5 8 11c0 2.5 1 4.5 2.5 5.8M12 2c0 0 4 4.5 4 9 0 2.5-1 4.5-2.5 5.8"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M5.5 18c0 0 1-5 4.5-7.5 2-1.4 4.2-1.8 6-1.5M5.5 18c0 0 5 1 7.5-2.5 1.4-2 1.8-4.2 1.5-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M18.5 18c0 0-1-5-4.5-7.5-2-1.4-4.2-1.8-6-1.5M18.5 18c0 0-5 1-7.5-2.5-1.4-2-1.8-4.2-1.5-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    </svg>
   );
 }

@@ -1,5 +1,5 @@
 """
-TriageForge — RAG Retriever
+Trinity — RAG Retriever
 Query ChromaDB collections for relevant code and documentation.
 """
 

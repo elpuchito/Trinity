@@ -1,5 +1,5 @@
 """
-TriageForge — Mocked Linear API Service
+Trinity — Mocked Linear API Service
 Simulates the Linear issue tracking API for hackathon demo.
 Provides realistic ticket CRUD with in-memory state + DB persistence.
 """

@@ -1,5 +1,5 @@
 """
-TriageForge — Tickets API
+Trinity — Tickets API
 REST endpoints for ticket CRUD and mocked Linear webhook.
 """
 

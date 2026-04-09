@@ -1,5 +1,5 @@
 """
-TriageForge — Input Validator
+Trinity — Input Validator
 File type and size validation for incident attachments.
 """
 

@@ -1,1 +1,1 @@
-# TriageForge Agent Pipeline
+# Trinity Agent Pipeline

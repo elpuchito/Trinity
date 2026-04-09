@@ -1,5 +1,5 @@
 """
-TriageForge — Intake Agent
+Trinity — Intake Agent
 First agent in the pipeline. Accepts raw incident data and produces
 structured, enriched output using Gemini's multimodal capabilities.
 """

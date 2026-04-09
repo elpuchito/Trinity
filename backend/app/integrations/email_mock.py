@@ -1,5 +1,5 @@
 """
-TriageForge — Mocked Email SMTP Service
+Trinity — Mocked Email SMTP Service
 Simulates email sending with rich HTML templates.
 Stores emails in-memory for the mock inbox viewer.
 """
@@ -65,8 +65,8 @@ class EmailMockService:
             "email_type": email_type,
             "incident_id": incident_id,
             "headers": {
-                "X-TriageForge-Incident": incident_id,
-                "X-TriageForge-Type": email_type,
+                "X-Trinity-Incident": incident_id,
+                "X-Trinity-Type": email_type,
                 "X-Priority": "1" if "P1" in subject else "3",
                 "Content-Type": "text/html; charset=utf-8",
             },
@@ -127,7 +127,7 @@ class EmailMockService:
             <div style="max-width: 600px; margin: 0 auto; padding: 32px 24px;">
                 <!-- Header -->
                 <div style="background: linear-gradient(135deg, #0A0E1A 0%, #1a1a3e 100%); border: 1px solid {color}40; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-                    <div style="font-size: 12px; color: {color}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">⚡ TriageForge Alert</div>
+                    <div style="font-size: 12px; color: {color}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">⚡ Trinity Alert</div>
                     <h1 style="color: #ffffff; margin: 0; font-size: 22px; line-height: 1.3;">{title}</h1>
                     <div style="margin-top: 16px; display: flex; gap: 12px;">
                         <span style="background: {color}20; color: {color}; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">{severity}</span>
@@ -157,13 +157,13 @@ class EmailMockService:
                 <div style="text-align: center; margin: 32px 0;">
                     <a href="http://localhost:3000/incident/{incident_id}"
                        style="background: {color}; color: #0A0E1A; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">
-                        View in TriageForge →
+                        View in Trinity →
                     </a>
                 </div>
 
                 <!-- Footer -->
                 <div style="text-align: center; color: #666; font-size: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ffffff0a;">
-                    🤖 Auto-triaged by TriageForge | Incident {incident_id[:8]}
+                    🤖 Auto-triaged by Trinity | Incident {incident_id[:8]}
                 </div>
             </div>
         </body>
@@ -193,7 +193,7 @@ class EmailMockService:
         <body style="margin: 0; padding: 0; background: #0A0E1A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
             <div style="max-width: 600px; margin: 0 auto; padding: 32px 24px;">
                 <div style="background: linear-gradient(135deg, #0A0E1A 0%, #1a1a3e 100%); border: 1px solid {color}40; border-radius: 12px; padding: 32px;">
-                    <div style="font-size: 12px; color: {color}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">TriageForge</div>
+                    <div style="font-size: 12px; color: {color}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Trinity</div>
                     <h1 style="color: #ffffff; margin: 0 0 16px 0; font-size: 22px;">Hi {reporter_name},</h1>
                     <p style="color: #c0c0c0; line-height: 1.6; font-size: 15px;">
                         Your incident report has been received and automatically triaged by our AI system.
@@ -216,7 +216,7 @@ class EmailMockService:
                     </div>
                 </div>
                 <div style="text-align: center; color: #666; font-size: 12px; margin-top: 24px;">
-                    🤖 TriageForge — Intelligent SRE Incident Triage
+                    🤖 Trinity — Intelligent SRE Incident Triage
                 </div>
             </div>
         </body>

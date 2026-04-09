@@ -1,5 +1,5 @@
 """
-TriageForge — LangGraph Pipeline Orchestration
+Trinity — LangGraph Pipeline Orchestration
 Wires all agents into a stateful multi-agent pipeline using LangGraph.
 
 Flow: Intake → [Code Analysis, Doc Analysis, Dedup] (parallel fan-out) → Router → Persist

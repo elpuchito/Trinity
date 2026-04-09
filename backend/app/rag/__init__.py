@@ -1,1 +1,1 @@
-# RAG module for TriageForge
+# RAG module for Trinity

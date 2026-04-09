@@ -1,3 +1,3 @@
 """
-TriageForge — App package
+Trinity — App package
 """

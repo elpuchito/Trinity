@@ -1,5 +1,5 @@
 """
-TriageForge — RAG Indexer
+Trinity — RAG Indexer
 Indexes the Saleor e-commerce codebase into ChromaDB for agent retrieval.
 Uses text-based chunking for Python files and heading-aware chunking for Markdown.
 """

@@ -1,5 +1,5 @@
 """
-TriageForge — Metrics Module
+Trinity — Metrics Module
 Direct prometheus_client metrics for pipeline, incidents, and guardrails.
 Exposes /metrics endpoint via make_asgi_app() or generate_latest().
 """
@@ -98,7 +98,7 @@ ACTIVE_PIPELINES = Gauge(
 
 APP_INFO = Info(
     "triageforge",
-    "TriageForge application metadata",
+    "Trinity application metadata",
 )
 APP_INFO.info({
     "version": "1.0.0",

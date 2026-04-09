@@ -60,7 +60,7 @@ docker compose up --build -d
 ## Verify Observability
 
 1. Open **http://localhost:3001** (Grafana)
-2. Navigate to **Dashboards → TriageForge**
+2. Navigate to **Dashboards → Trinity**
 3. See real-time metrics: pipeline latency, severity distribution, guardrails
 
 ## Stopping

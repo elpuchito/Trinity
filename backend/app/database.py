@@ -1,5 +1,5 @@
 """
-TriageForge — Database
+Trinity — Database
 Async SQLAlchemy engine and session management.
 """
 

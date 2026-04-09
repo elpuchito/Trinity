@@ -1,5 +1,5 @@
 """
-TriageForge — Configuration
+Trinity — Configuration
 Pydantic Settings for environment variable management.
 """
 
@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
     # --- Application ---
-    app_name: str = "TriageForge"
+    app_name: str = "Trinity"
     app_version: str = "1.0.0"
     debug: bool = True
 

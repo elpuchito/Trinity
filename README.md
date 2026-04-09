@@ -1,4 +1,4 @@
-# TriageForge
+# Trinity
 
 **AI-Powered SRE Incident Triage Agent** — Code-aware, real-time, fully observable.
 
@@ -14,11 +14,11 @@
 
 Manual incident triage is slow, inconsistent, and doesn't scale. When a P1 fires at 3 AM, oncall engineers spend 10–30 minutes gathering context before they can even begin fixing things — identifying affected services, searching for related code, checking if it's a known issue, and routing to the right team.
 
-**TriageForge automates this entire workflow in under 60 seconds.**
+**Trinity automates this entire workflow in under 60 seconds.**
 
 ---
 
-## What TriageForge Does
+## What Trinity Does
 
 A 5-agent AI pipeline analyzes every incoming incident in real-time:
 
@@ -227,7 +227,7 @@ triageforge/
 
 ## Observability
 
-TriageForge ships with a **full observability stack** — zero configuration needed:
+Trinity ships with a **full observability stack** — zero configuration needed:
 
 ### Custom Metrics (Prometheus)
 - `triageforge_pipeline_duration_seconds` — End-to-end latency histogram
@@ -271,7 +271,7 @@ All triggers are recorded in Prometheus metrics and included in the triage repor
 
 **SoftServe AI Hackathon 2026** — Solo developer, built in ~24 hours.
 
-The challenge: Build an AI agent for enterprise use. TriageForge targets **SRE incident management** — a domain where seconds matter, context is scattered, and human triage is the bottleneck.
+The challenge: Build an AI agent for enterprise use. Trinity targets **SRE incident management** — a domain where seconds matter, context is scattered, and human triage is the bottleneck.
 
 Key differentiators:
 - **Not just a chatbot** — a full multi-agent pipeline with specialized roles

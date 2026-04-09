@@ -5,9 +5,9 @@
 apiVersion: 1
 
 providers:
-  - name: "TriageForge"
+  - name: "Trinity"
     orgId: 1
-    folder: "TriageForge"
+    folder: "Trinity"
     type: file
     disableDeletion: false
     editable: true

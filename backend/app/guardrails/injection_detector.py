@@ -1,5 +1,5 @@
 """
-TriageForge — Prompt Injection Detector
+Trinity — Prompt Injection Detector
 Heuristic-based detection of prompt injection attempts in incident reports.
 """
 

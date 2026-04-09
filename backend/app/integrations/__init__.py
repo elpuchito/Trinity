@@ -1,5 +1,5 @@
 """
-TriageForge — Integrations Module
+Trinity — Integrations Module
 Singleton instances of mocked external services (Linear, Slack, Email).
 """
 

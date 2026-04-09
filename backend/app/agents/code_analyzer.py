@@ -1,5 +1,5 @@
 """
-TriageForge — Code Analyzer Agent
+Trinity — Code Analyzer Agent
 RAG-powered agent that searches the Saleor codebase to find relevant
 source code and hypothesize root causes.
 """

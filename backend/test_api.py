@@ -1,5 +1,5 @@
 """
-TriageForge — API Smoke Tests
+Trinity — API Smoke Tests
 Comprehensive programmatic tests for all Phase 1 endpoints.
 """
 
@@ -42,7 +42,7 @@ def test_health():
     assert r.status_code == 200, f"Expected 200, got {r.status_code}"
     data = r.json()
     assert data["status"] == "healthy", f"Status is {data['status']}"
-    assert data["service"] == "TriageForge"
+    assert data["service"] == "Trinity"
     assert data["version"] == "1.0.0"
 
 test("GET /health returns healthy", test_health)
@@ -70,7 +70,7 @@ def test_openapi_schema():
     r = requests.get(f"{BASE}/openapi.json")
     assert r.status_code == 200
     schema = r.json()
-    assert schema["info"]["title"] == "TriageForge"
+    assert schema["info"]["title"] == "Trinity"
     assert "/api/incidents" in str(schema["paths"])
 
 test("GET /openapi.json returns valid schema", test_openapi_schema)
@@ -366,7 +366,7 @@ print("=" * 50)
 def test_frontend_serves():
     r = requests.get("http://localhost:3000")
     assert r.status_code == 200
-    assert "TriageForge" in r.text
+    assert "Trinity" in r.text
 
 test("Frontend serves HTML at :3000", test_frontend_serves)
 

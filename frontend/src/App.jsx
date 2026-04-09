@@ -3,15 +3,15 @@ import Dashboard from './components/Dashboard';
 import IncidentForm from './components/IncidentForm';
 import IncidentDetail from './components/IncidentDetail';
 import NotificationFeed from './components/NotificationFeed';
-import { IconZap, IconDashboard, IconAlertTriangle, IconBarChart, IconBell } from './components/Icons';
+import { IconTrinity, IconDashboard, IconAlertTriangle, IconBarChart, IconBell } from './components/Icons';
 
 function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-icon"><IconZap size={18} stroke="#fff" /></div>
+        <div className="logo-icon"><IconTrinity size={18} stroke="#fff" /></div>
         <div>
-          <h1>TriageForge</h1>
+          <h1>Trinity</h1>
           <span className="version">v1.0</span>
         </div>
       </div>
@@ -65,7 +65,7 @@ function TopBar() {
 
   const title = location.pathname.startsWith('/incident/')
     ? 'Incident Detail'
-    : titles[location.pathname] || 'TriageForge';
+    : titles[location.pathname] || 'Trinity';
 
   return (
     <header className="topbar">

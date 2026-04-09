@@ -1,5 +1,5 @@
 """
-TriageForge — Notifications API
+Trinity — Notifications API
 REST endpoints for notification history and mocked Slack/Email inboxes.
 """
 

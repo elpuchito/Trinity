@@ -1,5 +1,5 @@
 """
-TriageForge — Structured Logging Configuration
+Trinity — Structured Logging Configuration
 JSON-formatted logs with OpenTelemetry trace correlation (trace_id, span_id).
 Enables Loki → Tempo cross-linking in Grafana.
 """

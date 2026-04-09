@@ -1,5 +1,5 @@
 """
-TriageForge — Incidents API
+Trinity — Incidents API
 CRUD endpoints for incident reports.
 Integrated with mocked Linear, Slack, and Email services.
 """

@@ -1,5 +1,5 @@
 """
-TriageForge — Pydantic Schemas
+Trinity — Pydantic Schemas
 Request/Response models for the API.
 """
 

@@ -1,5 +1,5 @@
 """
-TriageForge — Tracing Utilities
+Trinity — Tracing Utilities
 Central tracer factory for manual span instrumentation across the codebase.
 """
 

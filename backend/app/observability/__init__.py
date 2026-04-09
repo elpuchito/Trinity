@@ -1,1 +1,1 @@
-# TriageForge — Observability Module
+# Trinity — Observability Module

@@ -1,1 +1,1 @@
-# Guardrails module for TriageForge
+# Guardrails module for Trinity

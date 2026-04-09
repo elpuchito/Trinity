@@ -2,7 +2,7 @@
 
 ## Overview
 
-A **3-minute screencast** showing TriageForge from first incident to full triage — hitting every wow factor.
+A **3-minute screencast** showing Trinity from first incident to full triage — hitting every wow factor.
 
 ---
 
@@ -33,7 +33,7 @@ A **3-minute screencast** showing TriageForge from first incident to full triage
 **Show:** Title card or the dashboard
 
 **Say/Caption:**
-> "What if your SRE incidents could triage themselves? TriageForge uses 5 specialized AI agents to analyze incidents, search your codebase for root causes, and route to the right team — in under 60 seconds."
+> "What if your SRE incidents could triage themselves? Trinity uses 5 specialized AI agents to analyze incidents, search your codebase for root causes, and route to the right team — in under 60 seconds."
 
 **Action:** Quick pan of the dashboard showing existing incidents with severity badges.
 
@@ -135,7 +135,7 @@ A **3-minute screencast** showing TriageForge from first incident to full triage
 **Show:** Dashboard with multiple incidents triaged
 
 **Say/Caption:**
-> "TriageForge: 5 AI agents, code-aware triage, real-time pipeline animation, full observability, production guardrails. Built solo in 24 hours for the SoftServe AI Hackathon."
+> "Trinity: 5 AI agents, code-aware triage, real-time pipeline animation, full observability, production guardrails. Built solo in 24 hours for the SoftServe AI Hackathon."
 
 **Action:** Quick scroll through the dashboard showing multiple incidents with different severity levels and team assignments.
 

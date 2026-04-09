@@ -1,5 +1,5 @@
 """
-TriageForge — Doc Analyzer Agent
+Trinity — Doc Analyzer Agent
 RAG-powered agent that searches documentation and runbooks for
 mitigation steps, known issues, and historical context.
 """

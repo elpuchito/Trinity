@@ -1,5 +1,5 @@
 """
-TriageForge — PII Scrubber
+Trinity — PII Scrubber
 Regex-based PII detection and masking for incident reports.
 """
 

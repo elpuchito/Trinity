@@ -1,5 +1,5 @@
 """
-TriageForge — Mocked Slack Webhook Service
+Trinity — Mocked Slack Webhook Service
 Simulates Slack incoming webhooks with Block Kit message formatting.
 Stores channel message history in-memory for the mock inbox UI.
 """
@@ -70,7 +70,7 @@ class SlackMockService:
                 "ts": ts,
                 "type": "message",
                 "subtype": "bot_message",
-                "username": "TriageForge",
+                "username": "Trinity",
                 "bot_id": "B_TRIAGEFORGE",
                 "icons": {"emoji": ":rotating_light:"},
             },
@@ -164,7 +164,7 @@ class SlackMockService:
             "elements": [
                 {
                     "type": "button",
-                    "text": {"type": "plain_text", "text": "🔍 View in TriageForge"},
+                    "text": {"type": "plain_text", "text": "🔍 View in Trinity"},
                     "url": f"http://localhost:3000/incident/{incident_id}",
                     "style": "primary",
                 },
@@ -187,7 +187,7 @@ class SlackMockService:
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": f"🤖 Triaged by *TriageForge* at {datetime.now(timezone.utc).strftime('%H:%M UTC')} | Incident `{incident_id[:8]}`",
+                    "text": f"🤖 Triaged by *Trinity* at {datetime.now(timezone.utc).strftime('%H:%M UTC')} | Incident `{incident_id[:8]}`",
                 },
             ],
         })

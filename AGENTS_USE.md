@@ -1,6 +1,6 @@
 # AGENTS_USE.md — Multi-Agent Pipeline Deep Dive
 
-TriageForge uses a **5-agent sequential pipeline** orchestrated by [LangGraph](https://github.com/langchain-ai/langgraph). Each agent is a specialized function that reads from and writes to a shared state dictionary, progressively enriching the incident with structured analysis.
+Trinity uses a **5-agent sequential pipeline** orchestrated by [LangGraph](https://github.com/langchain-ai/langgraph). Each agent is a specialized function that reads from and writes to a shared state dictionary, progressively enriching the incident with structured analysis.
 
 ---
 

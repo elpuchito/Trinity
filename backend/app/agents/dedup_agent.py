@@ -1,5 +1,5 @@
 """
-TriageForge — Dedup Agent
+Trinity — Dedup Agent
 Detects duplicate or related incidents using embedding similarity via ChromaDB.
 """
 
@@ -45,7 +45,7 @@ async def run_dedup(state: dict) -> dict:
         chroma_client = get_chroma_client()
         collection = chroma_client.get_or_create_collection(
             name=INCIDENTS_COLLECTION,
-            metadata={"description": "TriageForge incident embeddings for dedup"},
+            metadata={"description": "Trinity incident embeddings for dedup"},
         )
         
         current_count = collection.count()

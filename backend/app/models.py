@@ -1,5 +1,5 @@
 """
-TriageForge — SQLAlchemy Models
+Trinity — SQLAlchemy Models
 Core data models: Incident, Ticket, Notification, TriageResult
 """
 
