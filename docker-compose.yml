@@ -1,0 +1,186 @@
+services:
+  # ============================================
+  # Frontend — React + Vite
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: triageforge-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+    depends_on:
+      - backend
+    networks:
+      - triageforge
+
+  # ============================================
+  # Backend — FastAPI
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: triageforge-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - OTEL_SERVICE_NAME=triageforge-backend
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ./backend/app:/app/app
+      - upload_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    networks:
+      - triageforge
+
+  # ============================================
+  # PostgreSQL
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: triageforge-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-triageforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-triageforge_secret_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-triageforge}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-triageforge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - triageforge
+
+  # ============================================
+  # Redis
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: triageforge-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - triageforge
+
+  # ============================================
+  # ChromaDB — Vector Store
+  # ============================================
+  chromadb:
+    image: chromadb/chroma:0.6.3
+    container_name: triageforge-chromadb
+    ports:
+      - "8500:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=false
+    networks:
+      - triageforge
+
+  # ============================================
+  # OpenTelemetry Collector
+  # ============================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: triageforge-otel
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # gRPC
+      - "4318:4318"   # HTTP
+      - "8888:8888"   # Prometheus metrics (collector)
+      - "8889:8889"   # Prometheus exporter
+    depends_on:
+      - tempo
+      - loki
+    networks:
+      - triageforge
+
+  # ============================================
+  # Grafana — Observability Dashboard
+  # ============================================
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: triageforge-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=triageforge
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - otel-collector
+    networks:
+      - triageforge
+
+  # ============================================
+  # Tempo — Distributed Tracing
+  # ============================================
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: triageforge-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo-config.yaml:/etc/tempo.yaml
+      - tempo_data:/tmp/tempo
+    ports:
+      - "3200:3200"   # Tempo API
+    networks:
+      - triageforge
+
+  # ============================================
+  # Loki — Log Aggregation
+  # ============================================
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: triageforge-loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    networks:
+      - triageforge
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:
+  grafana_data:
+  tempo_data:
+  loki_data:
+  upload_data:
+
+networks:
+  triageforge:
+    driver: bridge

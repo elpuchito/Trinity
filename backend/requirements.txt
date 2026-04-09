@@ -1,0 +1,43 @@
+# ============================================
+# Backend Dependencies — TriageForge
+# ============================================
+
+# --- Web Framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# --- Database ---
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.1
+
+# --- AI / Agent Framework ---
+langchain==0.3.14
+langgraph==0.2.60
+langchain-google-genai==2.0.8
+google-generativeai==0.8.4
+
+# --- Vector Store ---
+chromadb==0.6.3
+
+# --- Cache / Queue ---
+redis==5.2.1
+
+# --- Observability ---
+opentelemetry-api==1.29.0
+opentelemetry-sdk==1.29.0
+opentelemetry-instrumentation-fastapi==0.50b0
+opentelemetry-exporter-otlp-proto-grpc==1.29.0
+opentelemetry-instrumentation-sqlalchemy==0.50b0
+opentelemetry-instrumentation-redis==0.50b0
+opentelemetry-instrumentation-httpx==0.50b0
+
+# --- Utilities ---
+pydantic-settings==2.7.1
+httpx==0.28.1
+python-dateutil==2.9.0
+uuid6==2024.7.10
+
+# --- Guardrails ---
+bleach==6.2.0
