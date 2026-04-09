@@ -41,3 +41,6 @@ uuid6==2024.7.10
 
 # --- Guardrails ---
 bleach==6.2.0
+
+# --- Metrics ---
+prometheus-client==0.21.1

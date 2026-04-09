@@ -141,6 +141,7 @@ services:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - otel-collector
+      - prometheus
     networks:
       - triageforge
 
@@ -173,6 +174,24 @@ services:
     networks:
       - triageforge
 
+  # ============================================
+  # Prometheus — Metrics Store
+  # ============================================
+  prometheus:
+    image: prom/prometheus:v2.53.3
+    container_name: triageforge-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=48h"
+      - "--web.enable-lifecycle"
+    networks:
+      - triageforge
+
 volumes:
   postgres_data:
   redis_data:
@@ -181,6 +200,7 @@ volumes:
   tempo_data:
   loki_data:
   upload_data:
+  prometheus_data:
 
 networks:
   triageforge:

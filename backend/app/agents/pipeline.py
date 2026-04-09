@@ -18,8 +18,14 @@ from app.agents.code_analyzer import run_code_analysis
 from app.agents.doc_analyzer import run_doc_analysis
 from app.agents.dedup_agent import run_dedup
 from app.agents.router_agent import run_router
+from app.observability.tracing import get_tracer
+from app.observability.metrics import (
+    stage_timer, pipeline_timer,
+    PIPELINE_RUNS, INCIDENTS_BY_SEVERITY,
+)
 
 logger = logging.getLogger("triageforge.agents.pipeline")
+tracer = get_tracer("triageforge.pipeline")
 
 
 # ============================================
@@ -131,82 +137,117 @@ def _add_stage_update(state: dict, stage: str, status: str, message: str = "") -
 async def intake_node(state: dict) -> dict:
     """Intake agent node — extract structured data from raw input."""
     state = _add_stage_update(state, "intake", "running", "Analyzing incident report...")
-    try:
-        state = await run_intake(state)
-        state = _add_stage_update(state, "intake", "completed",
-                                   f"Service: {state.get('affected_service', 'unknown')}, "
-                                   f"Severity hint: {state.get('severity_hint', '?')}")
-    except Exception as e:
-        logger.error("Intake agent failed: %s", e)
-        state["errors"] = state.get("errors", []) + [f"intake: {str(e)}"]
-        state = _add_stage_update(state, "intake", "error", str(e))
+    with tracer.start_as_current_span("pipeline.intake") as span:
+        span.set_attribute("incident.id", state.get("incident_id", ""))
+        with stage_timer("intake"):
+            try:
+                state = await run_intake(state)
+                span.set_attribute("intake.service", state.get("affected_service", ""))
+                span.set_attribute("intake.severity_hint", state.get("severity_hint", ""))
+                state = _add_stage_update(state, "intake", "completed",
+                                           f"Service: {state.get('affected_service', 'unknown')}, "
+                                           f"Severity hint: {state.get('severity_hint', '?')}")
+            except Exception as e:
+                span.set_attribute("error", True)
+                span.set_attribute("error.message", str(e))
+                logger.error("Intake agent failed: %s", e)
+                state["errors"] = state.get("errors", []) + [f"intake: {str(e)}"]
+                state = _add_stage_update(state, "intake", "error", str(e))
     return state
 
 
 async def code_analysis_node(state: dict) -> dict:
     """Code analyzer node — RAG search over Saleor codebase."""
     state = _add_stage_update(state, "code_analysis", "running", "Searching codebase...")
-    try:
-        state = await run_code_analysis(state)
-        state = _add_stage_update(state, "code_analysis", "completed",
-                                   f"Found {len(state.get('related_code_files', []))} relevant files")
-    except Exception as e:
-        logger.error("Code analysis agent failed: %s", e)
-        state["errors"] = state.get("errors", []) + [f"code_analysis: {str(e)}"]
-        state = _add_stage_update(state, "code_analysis", "error", str(e))
-        state.setdefault("related_code_files", [])
-        state.setdefault("code_root_cause", "Analysis failed")
-        state.setdefault("code_confidence", 0.0)
+    with tracer.start_as_current_span("pipeline.code_analysis") as span:
+        span.set_attribute("incident.id", state.get("incident_id", ""))
+        with stage_timer("code_analysis"):
+            try:
+                state = await run_code_analysis(state)
+                span.set_attribute("code.files_found", len(state.get("related_code_files", [])))
+                span.set_attribute("code.confidence", state.get("code_confidence", 0.0))
+                state = _add_stage_update(state, "code_analysis", "completed",
+                                           f"Found {len(state.get('related_code_files', []))} relevant files")
+            except Exception as e:
+                span.set_attribute("error", True)
+                span.set_attribute("error.message", str(e))
+                logger.error("Code analysis agent failed: %s", e)
+                state["errors"] = state.get("errors", []) + [f"code_analysis: {str(e)}"]
+                state = _add_stage_update(state, "code_analysis", "error", str(e))
+                state.setdefault("related_code_files", [])
+                state.setdefault("code_root_cause", "Analysis failed")
+                state.setdefault("code_confidence", 0.0)
     return state
 
 
 async def doc_analysis_node(state: dict) -> dict:
     """Doc analyzer node — RAG search over documentation."""
     state = _add_stage_update(state, "doc_analysis", "running", "Searching documentation...")
-    try:
-        state = await run_doc_analysis(state)
-        state = _add_stage_update(state, "doc_analysis", "completed",
-                                   f"Found {len(state.get('known_issues', []))} known issues")
-    except Exception as e:
-        logger.error("Doc analysis agent failed: %s", e)
-        state["errors"] = state.get("errors", []) + [f"doc_analysis: {str(e)}"]
-        state = _add_stage_update(state, "doc_analysis", "error", str(e))
-        state.setdefault("suggested_runbook", "Not available")
-        state.setdefault("known_issues", [])
-        state.setdefault("doc_references", [])
+    with tracer.start_as_current_span("pipeline.doc_analysis") as span:
+        span.set_attribute("incident.id", state.get("incident_id", ""))
+        with stage_timer("doc_analysis"):
+            try:
+                state = await run_doc_analysis(state)
+                span.set_attribute("doc.known_issues", len(state.get("known_issues", [])))
+                span.set_attribute("doc.references", len(state.get("doc_references", [])))
+                state = _add_stage_update(state, "doc_analysis", "completed",
+                                           f"Found {len(state.get('known_issues', []))} known issues")
+            except Exception as e:
+                span.set_attribute("error", True)
+                span.set_attribute("error.message", str(e))
+                logger.error("Doc analysis agent failed: %s", e)
+                state["errors"] = state.get("errors", []) + [f"doc_analysis: {str(e)}"]
+                state = _add_stage_update(state, "doc_analysis", "error", str(e))
+                state.setdefault("suggested_runbook", "Not available")
+                state.setdefault("known_issues", [])
+                state.setdefault("doc_references", [])
     return state
 
 
 async def dedup_node(state: dict) -> dict:
     """Dedup agent node — check for duplicate incidents."""
     state = _add_stage_update(state, "dedup", "running", "Checking for duplicates...")
-    try:
-        state = await run_dedup(state)
-        dup_msg = "Duplicate found!" if state.get("is_duplicate") else "No duplicates"
-        state = _add_stage_update(state, "dedup", "completed", dup_msg)
-    except Exception as e:
-        logger.error("Dedup agent failed: %s", e)
-        state["errors"] = state.get("errors", []) + [f"dedup: {str(e)}"]
-        state = _add_stage_update(state, "dedup", "error", str(e))
-        state.setdefault("is_duplicate", False)
-        state.setdefault("duplicate_of_id", None)
+    with tracer.start_as_current_span("pipeline.dedup") as span:
+        span.set_attribute("incident.id", state.get("incident_id", ""))
+        with stage_timer("dedup"):
+            try:
+                state = await run_dedup(state)
+                span.set_attribute("dedup.is_duplicate", state.get("is_duplicate", False))
+                span.set_attribute("dedup.similar_count", len(state.get("related_incidents", [])))
+                dup_msg = "Duplicate found!" if state.get("is_duplicate") else "No duplicates"
+                state = _add_stage_update(state, "dedup", "completed", dup_msg)
+            except Exception as e:
+                span.set_attribute("error", True)
+                span.set_attribute("error.message", str(e))
+                logger.error("Dedup agent failed: %s", e)
+                state["errors"] = state.get("errors", []) + [f"dedup: {str(e)}"]
+                state = _add_stage_update(state, "dedup", "error", str(e))
+                state.setdefault("is_duplicate", False)
+                state.setdefault("duplicate_of_id", None)
     return state
 
 
 async def router_node(state: dict) -> dict:
     """Router agent node — final severity and team assignment."""
     state = _add_stage_update(state, "router", "running", "Making routing decision...")
-    try:
-        state = await run_router(state)
-        state = _add_stage_update(state, "router", "completed",
-                                   f"Severity: {state.get('final_severity', '?')}, "
-                                   f"Team: {state.get('assigned_team', '?')}")
-    except Exception as e:
-        logger.error("Router agent failed: %s", e)
-        state["errors"] = state.get("errors", []) + [f"router: {str(e)}"]
-        state = _add_stage_update(state, "router", "error", str(e))
-        state.setdefault("final_severity", state.get("severity_hint", "P3"))
-        state.setdefault("assigned_team", "sre-oncall")
+    with tracer.start_as_current_span("pipeline.router") as span:
+        span.set_attribute("incident.id", state.get("incident_id", ""))
+        with stage_timer("router"):
+            try:
+                state = await run_router(state)
+                span.set_attribute("router.severity", state.get("final_severity", ""))
+                span.set_attribute("router.team", state.get("assigned_team", ""))
+                state = _add_stage_update(state, "router", "completed",
+                                           f"Severity: {state.get('final_severity', '?')}, "
+                                           f"Team: {state.get('assigned_team', '?')}")
+            except Exception as e:
+                span.set_attribute("error", True)
+                span.set_attribute("error.message", str(e))
+                logger.error("Router agent failed: %s", e)
+                state["errors"] = state.get("errors", []) + [f"router: {str(e)}"]
+                state = _add_stage_update(state, "router", "error", str(e))
+                state.setdefault("final_severity", state.get("severity_hint", "P3"))
+                state.setdefault("assigned_team", "sre-oncall")
     return state
 
 
@@ -216,9 +257,12 @@ async def persist_node(state: dict) -> dict:
     This is handled separately by the pipeline runner (trigger_triage_pipeline),
     so this node just marks completion.
     """
-    state["pipeline_end_time"] = datetime.now(timezone.utc).isoformat()
-    state = _add_stage_update(state, "persist", "completed", "Results saved to database")
-    logger.info("📝 Pipeline complete — results ready for persistence")
+    with tracer.start_as_current_span("pipeline.persist") as span:
+        span.set_attribute("incident.id", state.get("incident_id", ""))
+        with stage_timer("persist"):
+            state["pipeline_end_time"] = datetime.now(timezone.utc).isoformat()
+            state = _add_stage_update(state, "persist", "completed", "Results saved to database")
+            logger.info("📝 Pipeline complete — results ready for persistence")
     return state
 
 
@@ -319,8 +363,21 @@ async def run_triage_pipeline(
     graph = get_triage_graph()
     
     try:
-        # Run the graph
-        final_state = await graph.ainvoke(initial_state)
+        # Run the graph with pipeline-level metrics
+        with pipeline_timer():
+            with tracer.start_as_current_span("pipeline.full_run") as span:
+                span.set_attribute("incident.id", incident_id)
+                span.set_attribute("incident.title", title[:100])
+                final_state = await graph.ainvoke(initial_state)
+                span.set_attribute("pipeline.severity", final_state.get("final_severity", ""))
+                span.set_attribute("pipeline.team", final_state.get("assigned_team", ""))
+                span.set_attribute("pipeline.stages", len(final_state.get("pipeline_stages", [])))
+                span.set_attribute("pipeline.errors", len(final_state.get("errors", [])))
+        
+        # Record metrics
+        PIPELINE_RUNS.labels(status="completed").inc()
+        final_sev = final_state.get("final_severity", "UNKNOWN")
+        INCIDENTS_BY_SEVERITY.labels(severity=final_sev).inc()
         
         logger.info(
             "✅ Pipeline complete for %s: severity=%s, team=%s, stages=%d",
@@ -333,6 +390,7 @@ async def run_triage_pipeline(
         return final_state
         
     except Exception as e:
+        PIPELINE_RUNS.labels(status="error").inc()
         logger.error("Pipeline execution failed for %s: %s", incident_id, e)
         initial_state["errors"].append(f"pipeline: {str(e)}")
         initial_state["pipeline_end_time"] = datetime.now(timezone.utc).isoformat()

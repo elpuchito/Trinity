@@ -1,0 +1,16 @@
+# ============================================
+# Grafana Dashboard Provisioning
+# ============================================
+
+apiVersion: 1
+
+providers:
+  - name: "TriageForge"
+    orgId: 1
+    folder: "TriageForge"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

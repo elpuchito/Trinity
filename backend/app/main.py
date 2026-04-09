@@ -22,14 +22,13 @@ from app.database import init_db, close_db
 from app.api.incidents import router as incidents_router
 from app.api.tickets import router as tickets_router
 from app.api.notifications import router as notifications_router
+from app.observability.logging_config import setup_structured_logging
+from app.observability.metrics import get_metrics_response
 
 # ============================================
-# Logging
+# Structured Logging (must be first)
 # ============================================
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+setup_structured_logging()
 logger = logging.getLogger("triageforge")
 
 settings = get_settings()
@@ -39,7 +38,7 @@ settings = get_settings()
 # OpenTelemetry Setup
 # ============================================
 def setup_telemetry():
-    """Initialize OpenTelemetry tracing."""
+    """Initialize OpenTelemetry tracing with auto-instrumentors."""
     resource = Resource.create({
         "service.name": settings.otel_service_name,
         "service.version": settings.app_version,
@@ -52,11 +51,27 @@ def setup_telemetry():
             insecure=True,
         )
         provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
-        logger.info(f"OpenTelemetry exporting to {settings.otel_exporter_otlp_endpoint}")
+        logger.info("OpenTelemetry exporting to %s", settings.otel_exporter_otlp_endpoint)
     except Exception as e:
-        logger.warning(f"Failed to connect to OTel collector: {e}. Traces will be local only.")
+        logger.warning("Failed to connect to OTel collector: %s. Traces will be local only.", e)
 
     trace.set_tracer_provider(provider)
+
+    # Auto-instrument SQLAlchemy and Redis for deep trace visibility
+    try:
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+        SQLAlchemyInstrumentor().instrument()
+        logger.info("SQLAlchemy auto-instrumentation enabled")
+    except Exception as e:
+        logger.warning("SQLAlchemy instrumentation failed: %s", e)
+
+    try:
+        from opentelemetry.instrumentation.redis import RedisInstrumentor
+        RedisInstrumentor().instrument()
+        logger.info("Redis auto-instrumentation enabled")
+    except Exception as e:
+        logger.warning("Redis instrumentation failed: %s", e)
+
     return provider
 
 
@@ -150,6 +165,14 @@ async def health_check():
         "service": settings.app_name,
         "version": settings.app_version,
     }
+
+
+@app.get("/metrics", tags=["system"], include_in_schema=False)
+async def metrics_endpoint():
+    """Prometheus metrics endpoint for scraping."""
+    from fastapi.responses import Response
+    body, content_type = get_metrics_response()
+    return Response(content=body, media_type=content_type)
 
 
 @app.get("/", tags=["system"])
