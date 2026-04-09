@@ -1,0 +1,337 @@
+:root {
+  /* Colors */
+  --color-white: #ffffff;
+  --color-light-gray: #f5f5f5;
+  --color-warm-stone: #f5f2ef;
+  --color-warm-stone-translucent: rgba(245, 242, 239, 0.8);
+  --color-black: #000000;
+  --color-dark-gray: #4e4e4e;
+  --color-warm-gray: #777169;
+  --color-near-white: #f6f6f6;
+  
+  --color-border-light: #e5e5e5;
+  --color-border-subtle: rgba(0, 0, 0, 0.05);
+
+  /* Shadows */
+  --shadow-inset-edge: rgba(0, 0, 0, 0.075) 0px 0px 0px 0.5px inset, #fff 0px 0px 0px 0px inset;
+  --shadow-outline-ring: rgba(0, 0, 0, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 1px 2px, rgba(0, 0, 0, 0.04) 0px 2px 4px;
+  --shadow-card: rgba(0, 0, 0, 0.4) 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 4px 4px;
+  --shadow-warm-lift: rgba(78, 50, 23, 0.04) 0px 6px 16px;
+  
+  /* Fonts */
+  --font-display: "Waldenburg", "Optima", "Helvetica Neue", sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-image: radial-gradient(var(--color-border-light) 1px, transparent 0);
+  background-size: 32px 32px;
+  background-color: var(--color-white);
+  color: var(--color-black);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* Hide scrollbars for the pitch deck feel */
+  line-height: 1.6;
+}
+
+/* Typography Scale */
+h1, .hero-display {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 300;
+  line-height: 1.08;
+  letter-spacing: -0.96px;
+}
+
+h2, .section-heading {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 300;
+  line-height: 1.17;
+  letter-spacing: normal;
+}
+
+h3, .card-heading {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1.13;
+  letter-spacing: normal;
+}
+
+p.body-large {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--color-dark-gray);
+}
+
+p {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.18px;
+  color: var(--color-dark-gray);
+}
+
+.body-standard {
+  font-size: 16px;
+  letter-spacing: 0.16px;
+}
+
+.uppercase-cta {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.85;
+  background-color: var(--color-near-white);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Base Deck Layout Container */
+#deck-container {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 40px 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  transform: translateY(10px);
+}
+
+.slide.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.slide-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.slide-header {
+  position: absolute;
+  top: 40px;
+  left: 80px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.slide-header .brand {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: -0.5px;
+}
+
+/* Controls */
+.controls {
+  position: absolute;
+  bottom: 40px;
+  right: 80px;
+  display: flex;
+  gap: 16px;
+  z-index: 100;
+}
+
+.btn-nav {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: var(--color-white);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-card);
+  color: var(--color-black);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-nav:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-outline-ring);
+}
+
+.btn-nav:active {
+  transform: translateY(0);
+}
+
+.slide-counter {
+  position: absolute;
+  bottom: 40px;
+  left: 80px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--color-warm-gray);
+  letter-spacing: 0.15px;
+}
+
+/* Slide Specific Layouts */
+
+/* 1. Title Slide */
+.slide-title {
+  text-align: center;
+}
+.slide-title h1 {
+  font-size: 64px;
+  margin-bottom: 24px;
+}
+.label-badge {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  box-shadow: var(--shadow-inset-edge);
+  color: var(--color-warm-gray);
+  margin-bottom: 32px;
+}
+
+/* Cards & Elements */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 48px;
+  align-items: stretch;
+}
+
+.design-card {
+  background: var(--color-white);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: var(--shadow-outline-ring);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.design-card:hover {
+  transform: translateY(-4px);
+}
+.design-card h3 {
+  font-size: 24px;
+  margin-bottom: 16px;
+  color: var(--color-black);
+}
+
+/* Image Showcase */
+.dashboard-showcase {
+  margin-top: 40px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: var(--shadow-outline-ring);
+  background: var(--color-light-gray);
+  padding: 8px; /* Inner padding like a device frame */
+  position: relative;
+}
+.dashboard-showcase img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 16px;
+  box-shadow: var(--shadow-inset-edge);
+}
+
+/* Pill buttons */
+.btn-primary {
+  background: var(--color-black);
+  color: var(--color-white);
+  padding: 14px 24px;
+  border-radius: 9999px;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+.btn-primary:hover {
+  background: var(--color-dark-gray);
+}
+
+.btn-warm {
+  background: var(--color-warm-stone-translucent);
+  color: var(--color-black);
+  padding: 12px 20px 12px 14px;
+  border-radius: 30px;
+  box-shadow: var(--shadow-warm-lift);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-weight: 500;
+}
+.btn-warm:hover {
+  transform: translateY(-2px);
+  box-shadow: rgba(78, 50, 23, 0.08) 0px 8px 24px;
+}
+
+/* Multi-column simple */
+.split-layout {
+  display: flex;
+  gap: 64px;
+  align-items: center;
+}
+.split-layout > div {
+  flex: 1;
+}
+
+/* Feature tags */
+.feature-tags {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.tag {
+  background: var(--color-warm-stone);
+  color: var(--color-black);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+@media (max-width: 1024px) {
+  .slide { padding: 40px 32px; }
+  .card-grid { grid-template-columns: 1fr; gap: 24px; }
+  .split-layout { flex-direction: column; }
+  h1, .hero-display { font-size: 40px; }
+}

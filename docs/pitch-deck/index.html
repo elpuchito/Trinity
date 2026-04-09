@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trinity Pitch Deck</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Note: Waldenburg is simulated via standard fallbacks in CSS (Optima / Helvetica Neue) due to it being custom -->
+    <!-- Icons -->
+    <link href="https://unpkg.com/lucide@latest/dist/lucide.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div class="slide-header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 2C12 2 8 6.5 8 11c0 2.5 1 4.5 2.5 5.8M12 2c0 0 4 4.5 4 9 0 2.5-1 4.5-2.5 5.8" />
+            <path d="M5.5 18c0 0 1-5 4.5-7.5 2-1.4 4.2-1.8 6-1.5M5.5 18c0 0 5 1 7.5-2.5 1.4-2 1.8-4.2 1.5-6" />
+            <path d="M18.5 18c0 0-1-5-4.5-7.5-2-1.4-4.2-1.8-6-1.5M18.5 18c0 0-5 1-7.5-2.5-1.4-2-1.8-4.2-1.5-6" />
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+        </svg>
+        <span class="brand">Trinity</span>
+    </div>
+
+    <div id="deck-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <div class="slide-content slide-title">
+                <div class="label-badge">SoftServe AI Hackathon 2026</div>
+                <h1 class="hero-display">AI-Powered SRE Incident Triage.</h1>
+                <p class="body-large" style="max-width: 600px; margin: 0 auto 40px auto;">
+                    Trinity accelerates root-cause analysis by reading code, docs, and visual state—delivering instant context when seconds matter.
+                </p>
+                <div style="display: flex; gap: 16px; justify-content: center;">
+                    <a href="https://youtu.be/CRyFQ01jBes" target="_blank" class="btn-primary" style="text-decoration: none;">Watch Demo</a>
+                    <a href="https://github.com/elpuchito/Trinity" target="_blank" class="btn-warm uppercase-cta" style="text-decoration: none;">View GitHub</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: The Problem -->
+        <div class="slide">
+            <div class="slide-content">
+                <div class="label-badge">THE PROBLEM</div>
+                <h2 class="section-heading" style="margin-bottom: 24px;">Manual triage is slow and doesn't scale.</h2>
+                <p class="body-large" style="max-width: 800px; margin-bottom: 48px;">
+                    When a P1 fires at 3 AM, oncall engineers spend 10–30 minutes identifying affected services, searching for related code, and checking for known issues before they even begin fixing the problem.
+                </p>
+                
+                <div class="card-grid">
+                    <div class="design-card">
+                        <h3>Scattered Context</h3>
+                        <p class="body-standard">Logs, traces, codebases, and runbooks exist in disconnected silos. Correlating them takes precious time.</p>
+                    </div>
+                    <div class="design-card">
+                        <h3>Ticket Storms</h3>
+                        <p class="body-standard">A single outage can trigger dozens of duplicate alerts, overwhelming the triage queue with noise.</p>
+                    </div>
+                    <div class="design-card">
+                        <h3>Domain Bottlenecks</h3>
+                        <p class="body-standard">Different services require different domain experts. Routing an incident to the wrong team wastes critical minutes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: The Solution -->
+        <div class="slide">
+            <div class="slide-content split-layout">
+                <div>
+                    <div class="label-badge">THE SOLUTION</div>
+                    <h2 class="section-heading" style="margin-bottom: 24px;">Under 60 seconds.</h2>
+                    <p class="body-large" style="margin-bottom: 24px;">
+                        Trinity automates the entire triage workflow. Our 5-agent LangGraph pipeline synthesizes all signals into actionable insights instantly.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">Intake</span>
+                        <span class="tag">Code Analyzer</span>
+                        <span class="tag">Doc Analyzer</span>
+                        <span class="tag">Dedup</span>
+                        <span class="tag">Router</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="design-card" style="background: var(--color-light-gray); text-align: center; padding: 16px; position: relative;">
+                        <img src="5-agents.png" alt="5 Ethereal AI Agents" style="width: 100%; height: auto; border-radius: 16px; display: block; box-shadow: var(--shadow-inset-edge);">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Realtime Dashboard (Focus on Dashboard.png) -->
+        <div class="slide">
+            <div class="slide-content">
+                <div class="label-badge">REAL-TIME VISIBILITY</div>
+                <h2 class="section-heading" style="margin-bottom: 16px;">Watch the pipeline think.</h2>
+                <p class="body-standard" style="max-width: 600px; margin-bottom: 32px;">
+                    Powered by WebSockets, Trinity's intuitive dashboard reveals agent states and severity distributions live—no refreshing required.
+                </p>
+                <div class="dashboard-showcase">
+                    <img src="../dashboard.png" alt="Trinity Incident Dashboard">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Differentiators -->
+        <div class="slide">
+            <div class="slide-content">
+                <div class="label-badge">DIFFERENTIATORS</div>
+                <h2 class="section-heading" style="margin-bottom: 40px;">Not just another chatbot.</h2>
+                
+                <div class="split-layout" style="align-items: stretch;">
+                    <div class="design-card">
+                        <h3>Code-Aware Triage</h3>
+                        <p class="body-standard">Trinity searches the actual codebase (via ChromaDB RAG index) to identify root cause hypotheses with confidence scores.</p>
+                    </div>
+                    <div class="design-card">
+                        <h3>Visual Analysis</h3>
+                        <p class="body-standard">Upload a screenshot. Our Multimodal Gemini agent reads error messages, stack traces, and UI state directly from the image.</p>
+                    </div>
+                    <div class="design-card">
+                        <h3>Production Guardrails</h3>
+                        <p class="body-standard">Built-in prompt injection detection, PII scrubbing, and full OpenTelemetry distributed tracing.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Call to Action -->
+        <div class="slide">
+            <div class="slide-content slide-title">
+                <div class="label-badge">GET STARTED</div>
+                <h1 class="hero-display">Deploy Trinity Today.</h1>
+                <p class="body-large" style="max-width: 600px; margin: 0 auto 40px auto;">
+                    A single `docker compose up` provisions the entire 10-service stack including Grafana, PostgreSQL, and FastAPI backend.
+                </p>
+                <div style="display: flex; gap: 16px; justify-content: center;">
+                    <a href="https://youtu.be/CRyFQ01jBes" target="_blank" class="btn-primary" style="padding: 16px 32px; font-size: 16px; text-decoration: none;">Watch Demo</a>
+                    <a href="https://github.com/elpuchito/Trinity" target="_blank" class="btn-warm uppercase-cta" style="padding: 16px 32px; text-decoration: none; align-items: center; display: inline-flex;">View GitHub</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Overlay -->
+    <div class="slide-counter" id="slide-counter">
+        1 / 6
+    </div>
+    <div class="controls">
+        <button class="btn-nav" id="btn-prev" aria-label="Previous Slide">
+            <i data-lucide="arrow-left" width="20" height="20"></i>
+        </button>
+        <button class="btn-nav" id="btn-next" aria-label="Next Slide">
+            <i data-lucide="arrow-right" width="20" height="20"></i>
+        </button>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
