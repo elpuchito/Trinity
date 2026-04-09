@@ -1,0 +1,37 @@
+"""
+Saleor Checkout Error Codes.
+"""
+
+from enum import Enum
+
+
+class CheckoutErrorCode(str, Enum):
+    BILLING_ADDRESS_NOT_SET = "billing_address_not_set"
+    CHECKOUT_NOT_FULLY_PAID = "checkout_not_fully_paid"
+    CHANNEL_INACTIVE = "channel_inactive"
+    DELIVERY_METHOD_NOT_APPLICABLE = "delivery_method_not_applicable"
+    EMAIL_NOT_SET = "email_not_set"
+    EMPTY_CHECKOUT = "empty_checkout"
+    GIFT_CARD_NOT_APPLICABLE = "gift_card_not_applicable"
+    GRAPHQL_ERROR = "graphql_error"
+    INACTIVE_PAYMENT = "inactive_payment"
+    INSUFFICIENT_STOCK = "insufficient_stock"
+    INVALID = "invalid"
+    INVALID_SHIPPING_METHOD = "invalid_shipping_method"
+    MISSING_CHANNEL_SLUG = "missing_channel_slug"
+    NOT_FOUND = "not_found"
+    NO_LINES = "no_lines"
+    PAYMENT_ERROR = "payment_error"
+    PRODUCT_NOT_PUBLISHED = "product_not_published"
+    PRODUCT_UNAVAILABLE_FOR_PURCHASE = "product_unavailable_for_purchase"
+    QUANTITY_GREATER_THAN_LIMIT = "quantity_greater_than_limit"
+    REQUIRED = "required"
+    SHIPPING_ADDRESS_NOT_SET = "shipping_address_not_set"
+    SHIPPING_METHOD_NOT_APPLICABLE = "shipping_method_not_applicable"
+    SHIPPING_METHOD_NOT_SET = "shipping_method_not_set"
+    SHIPPING_NOT_REQUIRED = "shipping_not_required"
+    TAX_ERROR = "tax_error"
+    UNAVAILABLE_VARIANT_IN_CHANNEL = "unavailable_variant_in_channel"
+    UNIQUE = "unique"
+    VOUCHER_NOT_APPLICABLE = "voucher_not_applicable"
+    ZERO_QUANTITY = "zero_quantity"

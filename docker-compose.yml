@@ -36,6 +36,7 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
     volumes:
       - ./backend/app:/app/app
+      - ./backend/ecommerce_codebase:/app/ecommerce_codebase
       - upload_data:/app/uploads
     depends_on:
       postgres:

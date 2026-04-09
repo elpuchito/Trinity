@@ -74,6 +74,19 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("🗄️  Database initialized")
 
+    # Index e-commerce codebase into ChromaDB (skip if already indexed)
+    try:
+        from app.rag.indexer import index_all
+        index_result = await index_all()
+        code_status = index_result.get("code", {}).get("status", "unknown")
+        docs_status = index_result.get("docs", {}).get("status", "unknown")
+        logger.info(
+            "🔍 RAG indexing: code=%s, docs=%s",
+            code_status, docs_status,
+        )
+    except Exception as e:
+        logger.warning("⚠️  RAG indexing failed (ChromaDB may not be ready): %s", e)
+
     logger.info("✅ TriageForge is ready!")
     yield
 

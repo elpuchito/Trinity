@@ -110,8 +110,18 @@ async def create_incident(
     await db.flush()
     await db.refresh(incident, ["tickets", "notifications"])
 
-    # TODO: Trigger agent pipeline asynchronously (Phase 2)
-    # await trigger_triage_pipeline(incident.id)
+    # Trigger agent pipeline asynchronously (in-process)
+    import asyncio
+    asyncio.create_task(
+        _run_pipeline_and_persist(
+            str(incident.id),
+            title,
+            description,
+            reporter_name,
+            reporter_email,
+            saved_files,
+        )
+    )
 
     return incident
 
@@ -205,6 +215,223 @@ async def update_incident(
     return incident
 
 
+
+# ============================================
+# Pipeline Integration
+# ============================================
+
+async def _run_pipeline_and_persist(
+    incident_id: str,
+    title: str,
+    description: str,
+    reporter_name: str,
+    reporter_email: str,
+    attachments: list,
+):
+    """
+    Run the triage pipeline and persist results to the database.
+    Called as a fire-and-forget asyncio task from create_incident.
+    """
+    import logging
+    from app.agents.pipeline import run_triage_pipeline
+    from app.database import async_session
+    from app.models import Incident, IncidentStatus, SeverityLevel, Ticket, Notification, NotificationChannel
+
+    logger = logging.getLogger("triageforge.pipeline_runner")
+    logger.info("🚀 Pipeline runner started for incident %s", incident_id)
+
+    try:
+        # Update status to TRIAGING
+        async with async_session() as db:
+            result = await db.execute(
+                select(Incident).where(Incident.id == uuid.UUID(incident_id))
+            )
+            incident = result.scalar_one_or_none()
+            if incident:
+                incident.status = IncidentStatus.TRIAGING
+                await db.commit()
+
+        # Broadcast status update
+        await manager.send_update(incident_id, {
+            "type": "pipeline_started",
+            "incident_id": incident_id,
+            "stage": "intake",
+            "status": "running",
+        })
+
+        # Run the full pipeline
+        final_state = await run_triage_pipeline(
+            incident_id=incident_id,
+            title=title,
+            description=description,
+            reporter_name=reporter_name,
+            reporter_email=reporter_email,
+            attachments=attachments,
+        )
+
+        # Broadcast stage updates
+        for stage in final_state.get("pipeline_stages", []):
+            await manager.send_update(incident_id, {
+                "type": "stage_update",
+                "incident_id": incident_id,
+                **stage,
+            })
+            await manager.broadcast({
+                "type": "stage_update",
+                "incident_id": incident_id,
+                **stage,
+            })
+
+        # --- Persist results to database ---
+        async with async_session() as db:
+            result = await db.execute(
+                select(Incident).where(Incident.id == uuid.UUID(incident_id))
+            )
+            incident = result.scalar_one_or_none()
+
+            if not incident:
+                logger.error("Incident %s not found after pipeline", incident_id)
+                return
+
+            # Map severity string to enum
+            severity_map = {
+                "P1": SeverityLevel.P1_CRITICAL,
+                "P2": SeverityLevel.P2_HIGH,
+                "P3": SeverityLevel.P3_MEDIUM,
+                "P4": SeverityLevel.P4_LOW,
+            }
+            final_sev = final_state.get("final_severity", "P3")
+
+            # Update incident with triage results
+            incident.severity = severity_map.get(final_sev, SeverityLevel.P3_MEDIUM)
+            incident.status = IncidentStatus.TRIAGED
+            incident.assigned_team = final_state.get("assigned_team", "sre-oncall")
+            incident.affected_service = final_state.get("affected_service", "unknown")
+            incident.root_cause_hypothesis = final_state.get("code_root_cause", "")
+            incident.suggested_runbook = final_state.get("suggested_runbook", "")
+            incident.related_code_files = final_state.get("related_code_files", [])
+            incident.is_duplicate = final_state.get("is_duplicate", False)
+
+            dup_id = final_state.get("duplicate_of_id")
+            if dup_id:
+                try:
+                    incident.duplicate_of_id = uuid.UUID(dup_id)
+                except (ValueError, TypeError):
+                    pass
+
+            # Build full triage report JSON
+            incident.triage_report = {
+                "severity": final_sev,
+                "affected_service": final_state.get("affected_service"),
+                "error_type": final_state.get("error_type"),
+                "root_cause_hypothesis": final_state.get("code_root_cause"),
+                "code_confidence": final_state.get("code_confidence", 0),
+                "suggested_runbook": final_state.get("suggested_runbook"),
+                "known_issues": final_state.get("known_issues", []),
+                "related_code_files": final_state.get("related_code_files", []),
+                "triage_summary": final_state.get("triage_summary", ""),
+                "recommended_actions": final_state.get("recommended_actions", []),
+                "routing_rationale": final_state.get("routing_rationale", ""),
+                "is_duplicate": final_state.get("is_duplicate", False),
+                "related_incidents": final_state.get("related_incidents", []),
+                "pipeline_stages": final_state.get("pipeline_stages", []),
+                "errors": final_state.get("errors", []),
+                "guardrails_triggered": final_state.get("guardrails_triggered", []),
+                "pipeline_start_time": final_state.get("pipeline_start_time"),
+                "pipeline_end_time": final_state.get("pipeline_end_time"),
+            }
+
+            # Create mocked ticket
+            ticket = Ticket(
+                incident_id=incident.id,
+                external_id=f"TF-{str(incident.id)[:8].upper()}",
+                external_url=f"https://linear.app/triageforge/issue/TF-{str(incident.id)[:8].upper()}",
+                title=final_state.get("structured_title", title),
+                priority=final_sev,
+                assignee=final_state.get("assigned_team", "sre-oncall"),
+                labels=[
+                    final_state.get("affected_service", "unknown"),
+                    final_state.get("error_type", "unknown"),
+                    final_sev,
+                ],
+            )
+            db.add(ticket)
+
+            # Create notifications
+            for notif in final_state.get("notification_plan", []):
+                channel = NotificationChannel.SLACK if notif.get("channel") == "slack" else NotificationChannel.EMAIL
+                notification = Notification(
+                    incident_id=incident.id,
+                    channel=channel,
+                    recipient=notif.get("recipient", ""),
+                    subject=f"[{final_sev}] {final_state.get('structured_title', title)[:100]}",
+                    message=final_state.get("triage_summary", "Incident triaged."),
+                    is_sent=True,
+                    sent_at=datetime.now(timezone.utc),
+                )
+                db.add(notification)
+
+            incident.status = IncidentStatus.TICKET_CREATED
+            await db.commit()
+            logger.info("✅ Pipeline results persisted for incident %s", incident_id)
+
+        # Final broadcast
+        await manager.send_update(incident_id, {
+            "type": "pipeline_completed",
+            "incident_id": incident_id,
+            "severity": final_sev,
+            "assigned_team": final_state.get("assigned_team"),
+            "triage_summary": final_state.get("triage_summary", ""),
+        })
+        await manager.broadcast({
+            "type": "incident_triaged",
+            "incident_id": incident_id,
+            "severity": final_sev,
+            "status": "ticket_created",
+        })
+
+    except Exception as e:
+        logger.error("Pipeline runner failed for %s: %s", incident_id, e, exc_info=True)
+        # Try to update incident status to reflect error
+        try:
+            async with async_session() as db:
+                result = await db.execute(
+                    select(Incident).where(Incident.id == uuid.UUID(incident_id))
+                )
+                incident = result.scalar_one_or_none()
+                if incident:
+                    incident.triage_report = {"error": str(e), "status": "pipeline_failed"}
+                    incident.status = IncidentStatus.TRIAGED
+                    await db.commit()
+        except Exception:
+            pass
+
+
+@router.get("/{incident_id}/pipeline-status")
+async def get_pipeline_status(
+    incident_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get the triage pipeline status for an incident."""
+    result = await db.execute(
+        select(Incident).where(Incident.id == incident_id)
+    )
+    incident = result.scalar_one_or_none()
+
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    triage_report = incident.triage_report or {}
+    return {
+        "incident_id": str(incident.id),
+        "status": incident.status.value if incident.status else "unknown",
+        "severity": incident.severity.value if incident.severity else "unknown",
+        "pipeline_stages": triage_report.get("pipeline_stages", []),
+        "errors": triage_report.get("errors", []),
+        "triage_summary": triage_report.get("triage_summary", ""),
+    }
+
+
 # ============================================
 # WebSocket for real-time pipeline updates
 # ============================================
@@ -230,3 +457,4 @@ async def websocket_global(websocket: WebSocket):
             data = await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, "__global__")
+
