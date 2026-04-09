@@ -9,7 +9,7 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import TypedDict, Optional, Annotated
+from typing import TypedDict, Optional, Annotated, Callable, Awaitable
 
 from langgraph.graph import StateGraph, END
 
@@ -84,20 +84,47 @@ class TriageState(TypedDict, total=False):
 
 
 # ============================================
+# Stage Broadcast Callback Type
+# ============================================
+
+# Callback signature: async fn(incident_id, stage_data) -> None
+StageCallback = Callable[[str, dict], Awaitable[None]]
+
+# Module-level callback holder (set per pipeline run)
+_active_callback: Optional[StageCallback] = None
+_active_incident_id: Optional[str] = None
+
+
+# ============================================
 # Node Wrapper Functions
 # ============================================
 
 def _add_stage_update(state: dict, stage: str, status: str, message: str = "") -> dict:
-    """Add a pipeline stage update for WebSocket broadcasting."""
+    """Add a pipeline stage update and broadcast via callback if available."""
     if "pipeline_stages" not in state:
         state["pipeline_stages"] = []
     
-    state["pipeline_stages"].append({
+    stage_data = {
         "stage": stage,
         "status": status,
         "message": message,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
+    }
+    state["pipeline_stages"].append(stage_data)
+    
+    # Fire real-time broadcast callback
+    if _active_callback and _active_incident_id:
+        try:
+            asyncio.get_event_loop().create_task(
+                _active_callback(_active_incident_id, {
+                    "type": "stage_update",
+                    "incident_id": _active_incident_id,
+                    **stage_data,
+                })
+            )
+        except Exception:
+            pass  # Never let callback errors break the pipeline
+    
     return state
 
 
@@ -251,6 +278,7 @@ async def run_triage_pipeline(
     reporter_name: str = "",
     reporter_email: str = "",
     attachments: list = None,
+    stage_callback: Optional[StageCallback] = None,
 ) -> dict:
     """
     Run the full triage pipeline for an incident.
@@ -262,11 +290,19 @@ async def run_triage_pipeline(
         reporter_name: Name of the reporter
         reporter_email: Email of the reporter
         attachments: List of attachment metadata dicts
+        stage_callback: Optional async callback for real-time stage broadcasts.
+                        Signature: async fn(incident_id: str, stage_data: dict) -> None
         
     Returns:
         Final pipeline state with all agent outputs
     """
+    global _active_callback, _active_incident_id
+    
     logger.info("🚀 Starting triage pipeline for incident %s", incident_id)
+    
+    # Set module-level callback for node wrappers to use
+    _active_callback = stage_callback
+    _active_incident_id = incident_id
     
     initial_state = {
         "incident_id": incident_id,
@@ -301,3 +337,7 @@ async def run_triage_pipeline(
         initial_state["errors"].append(f"pipeline: {str(e)}")
         initial_state["pipeline_end_time"] = datetime.now(timezone.utc).isoformat()
         return initial_state
+    finally:
+        # Clean up module-level callback
+        _active_callback = None
+        _active_incident_id = None

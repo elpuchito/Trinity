@@ -20,6 +20,8 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.api.incidents import router as incidents_router
+from app.api.tickets import router as tickets_router
+from app.api.notifications import router as notifications_router
 
 # ============================================
 # Logging
@@ -136,6 +138,8 @@ app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
 
 # Include API routers
 app.include_router(incidents_router)
+app.include_router(tickets_router)
+app.include_router(notifications_router)
 
 
 @app.get("/health", tags=["system"])

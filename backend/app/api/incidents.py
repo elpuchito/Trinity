@@ -1,11 +1,13 @@
 """
 TriageForge — Incidents API
 CRUD endpoints for incident reports.
+Integrated with mocked Linear, Slack, and Email services.
 """
 
 import uuid
 import os
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, WebSocket, WebSocketDisconnect
@@ -19,6 +21,9 @@ from app.schemas import (
     IncidentCreate, IncidentUpdate, IncidentResponse,
     IncidentListResponse, PipelineStageUpdate
 )
+from app.integrations import linear_service, slack_service, email_service
+
+logger = logging.getLogger("triageforge.api.incidents")
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 
@@ -177,7 +182,8 @@ async def update_incident(
     update: IncidentUpdate,
     db: AsyncSession = Depends(get_db),
 ):
-    """Update an incident (status, severity, assignment, etc.)."""
+    """Update an incident (status, severity, assignment, etc.).
+    When status transitions to RESOLVED, triggers resolution notifications."""
     query = (
         select(Incident)
         .where(Incident.id == incident_id)
@@ -192,6 +198,11 @@ async def update_incident(
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
 
+    is_resolving = (
+        update.status == IncidentStatus.RESOLVED
+        and incident.status != IncidentStatus.RESOLVED
+    )
+
     update_data = update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(incident, field, value)
@@ -204,9 +215,21 @@ async def update_incident(
     await db.flush()
     await db.refresh(incident, ["tickets", "notifications"])
 
+    # === Resolution Webhook Flow ===
+    if is_resolving:
+        await _handle_resolution(
+            incident_id=str(incident_id),
+            title=incident.title,
+            severity=incident.severity.value if incident.severity else "P3",
+            reporter_name=incident.reporter_name,
+            reporter_email=incident.reporter_email,
+            db=db,
+            incident=incident,
+        )
+
     # Broadcast status update via WebSocket
     await manager.broadcast({
-        "type": "incident_updated",
+        "type": "incident_resolved" if is_resolving else "incident_updated",
         "incident_id": str(incident_id),
         "status": incident.status.value,
         "severity": incident.severity.value if incident.severity else None,
@@ -217,8 +240,14 @@ async def update_incident(
 
 
 # ============================================
-# Pipeline Integration
+# Pipeline Integration (with Mock Services)
 # ============================================
+
+async def _stage_broadcast_callback(incident_id: str, stage_data: dict):
+    """WebSocket callback for real-time pipeline stage broadcasting."""
+    await manager.send_update(incident_id, stage_data)
+    await manager.broadcast(stage_data)
+
 
 async def _run_pipeline_and_persist(
     incident_id: str,
@@ -230,14 +259,13 @@ async def _run_pipeline_and_persist(
 ):
     """
     Run the triage pipeline and persist results to the database.
+    Uses mocked Linear, Slack, and Email services for integrations.
     Called as a fire-and-forget asyncio task from create_incident.
     """
-    import logging
     from app.agents.pipeline import run_triage_pipeline
     from app.database import async_session
     from app.models import Incident, IncidentStatus, SeverityLevel, Ticket, Notification, NotificationChannel
 
-    logger = logging.getLogger("triageforge.pipeline_runner")
     logger.info("🚀 Pipeline runner started for incident %s", incident_id)
 
     try:
@@ -251,7 +279,7 @@ async def _run_pipeline_and_persist(
                 incident.status = IncidentStatus.TRIAGING
                 await db.commit()
 
-        # Broadcast status update
+        # Broadcast pipeline start
         await manager.send_update(incident_id, {
             "type": "pipeline_started",
             "incident_id": incident_id,
@@ -259,7 +287,7 @@ async def _run_pipeline_and_persist(
             "status": "running",
         })
 
-        # Run the full pipeline
+        # Run the full pipeline with real-time stage callback
         final_state = await run_triage_pipeline(
             incident_id=incident_id,
             title=title,
@@ -267,22 +295,95 @@ async def _run_pipeline_and_persist(
             reporter_name=reporter_name,
             reporter_email=reporter_email,
             attachments=attachments,
+            stage_callback=_stage_broadcast_callback,
         )
 
-        # Broadcast stage updates
-        for stage in final_state.get("pipeline_stages", []):
-            await manager.send_update(incident_id, {
-                "type": "stage_update",
-                "incident_id": incident_id,
-                **stage,
-            })
-            await manager.broadcast({
-                "type": "stage_update",
-                "incident_id": incident_id,
-                **stage,
-            })
+        # --- Extract pipeline results ---
+        severity_map = {
+            "P1": SeverityLevel.P1_CRITICAL,
+            "P2": SeverityLevel.P2_HIGH,
+            "P3": SeverityLevel.P3_MEDIUM,
+            "P4": SeverityLevel.P4_LOW,
+        }
+        final_sev = final_state.get("final_severity", "P3")
+        assigned_team = final_state.get("assigned_team", "sre-oncall")
+        affected_service = final_state.get("affected_service", "unknown")
+        triage_summary = final_state.get("triage_summary", "")
+        recommended_actions = final_state.get("recommended_actions", [])
 
-        # --- Persist results to database ---
+        # === 1. Create ticket via Linear Mock Service ===
+        linear_issue = linear_service.create_issue(
+            title=final_state.get("structured_title", title),
+            description=triage_summary,
+            priority=final_sev,
+            assignee=assigned_team,
+            labels=[
+                affected_service,
+                final_state.get("error_type", "unknown"),
+                final_sev,
+            ],
+            incident_id=incident_id,
+        )
+        logger.info("📋 Ticket created: %s", linear_issue["identifier"])
+
+        # === 2. Send Slack notifications via Mock Service ===
+        for notif in final_state.get("notification_plan", []):
+            if notif.get("channel") == "slack":
+                slack_msg = slack_service.format_incident_message(
+                    incident_id=incident_id,
+                    title=final_state.get("structured_title", title),
+                    severity=final_sev,
+                    affected_service=affected_service,
+                    assigned_team=assigned_team,
+                    triage_summary=triage_summary,
+                    recommended_actions=recommended_actions,
+                    is_duplicate=final_state.get("is_duplicate", False),
+                )
+                slack_service.send_message(
+                    channel=notif.get("recipient", "#incidents"),
+                    text=slack_msg["text"],
+                    blocks=slack_msg["blocks"],
+                    incident_id=incident_id,
+                    urgency=notif.get("urgency", "normal"),
+                )
+
+        # === 3. Send Email notifications via Mock Service ===
+        for notif in final_state.get("notification_plan", []):
+            if notif.get("channel") == "email":
+                recipient = notif.get("recipient", "")
+                urgency = notif.get("urgency", "normal")
+
+                if urgency == "confirmation":
+                    # Reporter confirmation email
+                    email_content = email_service.format_reporter_confirmation(
+                        incident_id=incident_id,
+                        title=final_state.get("structured_title", title),
+                        severity=final_sev,
+                        reporter_name=reporter_name,
+                        ticket_id=linear_issue["identifier"],
+                    )
+                else:
+                    # Oncall alert email
+                    email_content = email_service.format_oncall_alert(
+                        incident_id=incident_id,
+                        title=final_state.get("structured_title", title),
+                        severity=final_sev,
+                        affected_service=affected_service,
+                        assigned_team=assigned_team,
+                        triage_summary=triage_summary,
+                        runbook_steps=final_state.get("suggested_runbook", ""),
+                        recommended_actions=recommended_actions,
+                    )
+
+                email_service.send_email(
+                    to=recipient,
+                    subject=email_content["subject"],
+                    html_body=email_content["html_body"],
+                    incident_id=incident_id,
+                    email_type="confirmation" if urgency == "confirmation" else "oncall_alert",
+                )
+
+        # === 4. Persist everything to database ===
         async with async_session() as db:
             result = await db.execute(
                 select(Incident).where(Incident.id == uuid.UUID(incident_id))
@@ -293,20 +394,11 @@ async def _run_pipeline_and_persist(
                 logger.error("Incident %s not found after pipeline", incident_id)
                 return
 
-            # Map severity string to enum
-            severity_map = {
-                "P1": SeverityLevel.P1_CRITICAL,
-                "P2": SeverityLevel.P2_HIGH,
-                "P3": SeverityLevel.P3_MEDIUM,
-                "P4": SeverityLevel.P4_LOW,
-            }
-            final_sev = final_state.get("final_severity", "P3")
-
             # Update incident with triage results
             incident.severity = severity_map.get(final_sev, SeverityLevel.P3_MEDIUM)
             incident.status = IncidentStatus.TRIAGED
-            incident.assigned_team = final_state.get("assigned_team", "sre-oncall")
-            incident.affected_service = final_state.get("affected_service", "unknown")
+            incident.assigned_team = assigned_team
+            incident.affected_service = affected_service
             incident.root_cause_hypothesis = final_state.get("code_root_cause", "")
             incident.suggested_runbook = final_state.get("suggested_runbook", "")
             incident.related_code_files = final_state.get("related_code_files", [])
@@ -322,15 +414,15 @@ async def _run_pipeline_and_persist(
             # Build full triage report JSON
             incident.triage_report = {
                 "severity": final_sev,
-                "affected_service": final_state.get("affected_service"),
+                "affected_service": affected_service,
                 "error_type": final_state.get("error_type"),
                 "root_cause_hypothesis": final_state.get("code_root_cause"),
                 "code_confidence": final_state.get("code_confidence", 0),
                 "suggested_runbook": final_state.get("suggested_runbook"),
                 "known_issues": final_state.get("known_issues", []),
                 "related_code_files": final_state.get("related_code_files", []),
-                "triage_summary": final_state.get("triage_summary", ""),
-                "recommended_actions": final_state.get("recommended_actions", []),
+                "triage_summary": triage_summary,
+                "recommended_actions": recommended_actions,
                 "routing_rationale": final_state.get("routing_rationale", ""),
                 "is_duplicate": final_state.get("is_duplicate", False),
                 "related_incidents": final_state.get("related_incidents", []),
@@ -341,23 +433,23 @@ async def _run_pipeline_and_persist(
                 "pipeline_end_time": final_state.get("pipeline_end_time"),
             }
 
-            # Create mocked ticket
+            # Persist ticket record (from Linear mock response)
             ticket = Ticket(
                 incident_id=incident.id,
-                external_id=f"TF-{str(incident.id)[:8].upper()}",
-                external_url=f"https://linear.app/triageforge/issue/TF-{str(incident.id)[:8].upper()}",
-                title=final_state.get("structured_title", title),
+                external_id=linear_issue["identifier"],
+                external_url=linear_issue["url"],
+                title=linear_issue["title"],
                 priority=final_sev,
-                assignee=final_state.get("assigned_team", "sre-oncall"),
+                assignee=assigned_team,
                 labels=[
-                    final_state.get("affected_service", "unknown"),
+                    affected_service,
                     final_state.get("error_type", "unknown"),
                     final_sev,
                 ],
             )
             db.add(ticket)
 
-            # Create notifications
+            # Persist notification records
             for notif in final_state.get("notification_plan", []):
                 channel = NotificationChannel.SLACK if notif.get("channel") == "slack" else NotificationChannel.EMAIL
                 notification = Notification(
@@ -365,7 +457,7 @@ async def _run_pipeline_and_persist(
                     channel=channel,
                     recipient=notif.get("recipient", ""),
                     subject=f"[{final_sev}] {final_state.get('structured_title', title)[:100]}",
-                    message=final_state.get("triage_summary", "Incident triaged."),
+                    message=triage_summary or "Incident triaged.",
                     is_sent=True,
                     sent_at=datetime.now(timezone.utc),
                 )
@@ -380,8 +472,9 @@ async def _run_pipeline_and_persist(
             "type": "pipeline_completed",
             "incident_id": incident_id,
             "severity": final_sev,
-            "assigned_team": final_state.get("assigned_team"),
-            "triage_summary": final_state.get("triage_summary", ""),
+            "assigned_team": assigned_team,
+            "ticket_id": linear_issue["identifier"],
+            "triage_summary": triage_summary,
         })
         await manager.broadcast({
             "type": "incident_triaged",
@@ -392,7 +485,6 @@ async def _run_pipeline_and_persist(
 
     except Exception as e:
         logger.error("Pipeline runner failed for %s: %s", incident_id, e, exc_info=True)
-        # Try to update incident status to reflect error
         try:
             async with async_session() as db:
                 result = await db.execute(
@@ -405,6 +497,93 @@ async def _run_pipeline_and_persist(
                     await db.commit()
         except Exception:
             pass
+
+
+# ============================================
+# Resolution Flow
+# ============================================
+
+async def _handle_resolution(
+    incident_id: str,
+    title: str,
+    severity: str,
+    reporter_name: str,
+    reporter_email: str,
+    db: AsyncSession,
+    incident: Incident,
+):
+    """
+    Handle resolution notifications when an incident is resolved.
+    Updates Linear ticket, sends Slack message, emails the reporter.
+    """
+    from app.models import Notification, NotificationChannel
+
+    logger.info("✅ Processing resolution for incident %s", incident_id)
+
+    # 1. Update Linear ticket to Done
+    linear_issue = linear_service.get_issue_by_incident(incident_id)
+    if linear_issue:
+        linear_service.update_issue(linear_issue["id"], state="done")
+        logger.info("📋 Linear ticket %s marked as Done", linear_issue["identifier"])
+
+    # 2. Send Slack resolution notification
+    slack_msg = slack_service.format_resolution_message(
+        incident_id=incident_id,
+        title=title,
+        severity=severity,
+    )
+    # Send to the same channels that were alerted
+    for channel_name in ["#critical-incidents", "#incidents"]:
+        slack_service.send_message(
+            channel=channel_name,
+            text=slack_msg["text"],
+            blocks=slack_msg["blocks"],
+            incident_id=incident_id,
+            urgency="resolution",
+        )
+
+    # Persist Slack resolution notification
+    slack_notif = Notification(
+        incident_id=uuid.UUID(incident_id),
+        channel=NotificationChannel.SLACK,
+        recipient="#critical-incidents",
+        subject=f"✅ Resolved: {title[:100]}",
+        message=f"Incident {incident_id[:8]} has been resolved.",
+        is_sent=True,
+        sent_at=datetime.now(timezone.utc),
+    )
+    db.add(slack_notif)
+
+    # 3. Email the reporter about resolution
+    if reporter_email:
+        email_content = email_service.format_resolution_email(
+            incident_id=incident_id,
+            title=title,
+            severity=severity,
+            reporter_name=reporter_name,
+        )
+        email_service.send_email(
+            to=reporter_email,
+            subject=email_content["subject"],
+            html_body=email_content["html_body"],
+            incident_id=incident_id,
+            email_type="resolution",
+        )
+
+        # Persist email notification
+        email_notif = Notification(
+            incident_id=uuid.UUID(incident_id),
+            channel=NotificationChannel.EMAIL,
+            recipient=reporter_email,
+            subject=email_content["subject"],
+            message=f"Resolution notification sent to {reporter_name}.",
+            is_sent=True,
+            sent_at=datetime.now(timezone.utc),
+        )
+        db.add(email_notif)
+
+    await db.flush()
+    logger.info("✅ Resolution notifications sent for incident %s", incident_id)
 
 
 @router.get("/{incident_id}/pipeline-status")
