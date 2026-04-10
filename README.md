@@ -1,5 +1,10 @@
 # Trinity
 
+<div align="center">
+  <img src="docs/logo.png" alt="Trinity Logo" width="300" />
+</div>
+
+
 **AI-Powered SRE Incident Triage Agent** — Code-aware, real-time, fully observable.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
